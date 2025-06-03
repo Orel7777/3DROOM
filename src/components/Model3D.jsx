@@ -429,8 +429,8 @@ function enhanceInteractionArea(object) {
   if (object.name === "Plane014" || object.name.includes("Poster") ||
       object.name === "TV" || object.name.includes("TV") ||
       object.name === "Plane002_1") {
-    // הגדלה של 5% בלבד לפוסטרים וטלוויזיה
-    interactionHelper.scale.multiplyScalar(1.05);
+    // הגדלה של 2% בלבד לפוסטרים וטלוויזיה - הקטנה משמעותית מ-5%
+    interactionHelper.scale.multiplyScalar(1.02);
   }
 
   // טיפול מיוחד בג'ויסטיק - הקטנה משמעותית של אזור האינטראקציה
@@ -533,7 +533,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     arrowUp: false,
     arrowDown: false
   });
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // הסרנו את מיקום העכבר כי עכשיו אנחנו משתמשים במיקומים קבועים
 
   useEffect(() => {
     // קבלת ה-URL של הקובץ מ-Firebase Storage
@@ -737,6 +737,15 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     logSceneObjects(gltfScene); // Log all objects in the scene
     interactiveObjects.current = {};
 
+    // לוג מפורט של כל האובייקטים עם מיקום
+    console.log("=== FULL SCENE OBJECTS LIST ===");
+    gltfScene.traverse((object) => {
+      if (object.isMesh) {
+        console.log(`Object: "${object.name}", type: ${object.type}, position:`, object.position, "parent:", object.parent?.name);
+      }
+    });
+    console.log("=== END FULL SCENE LIST ===");
+    
     // Find and reference Cylinder.010 for Leva controls
     gltfScene.traverse((object) => {
       if (object.isMesh && object.name === "Cylinder.010") {
@@ -761,18 +770,35 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     });
     
     // לוג מיוחד לבדוק את שמות כל האובייקטים שיכולים להיות יומן
-    console.log("=== מחפש אובייקטים שיכולים להיות יומן ===");
+    console.log("=== מחפש אובייקטים שיכולים להיות יומן - מורחב ===");
     gltfScene.traverse((object) => {
-      if (object.isMesh && (
-        object.name.includes("Cube") || 
-        object.name.includes("book") || 
-        object.name.includes("notebook") ||
-        object.name.includes("300")
-      )) {
-        console.log(`מצא אובייקט פוטנציאלי ליומן: ${object.name}`);
+      if (object.isMesh) {
+        // חיפוש רחב יותר של כל האובייקטים על השולחן
+        if (object.name.includes("Cube") || 
+            object.name.includes("book") || 
+            object.name.includes("notebook") ||
+            object.name.includes("300") ||
+            object.name.includes("diary") ||
+            object.name.includes("journal") ||
+            object.name.toLowerCase().includes("note") ||
+            // גם אובייקטים שיכולים להיות על השולחן
+            (object.position && object.position.x > -1 && object.position.x < 3 && 
+             object.position.z > -2 && object.position.z < 2 && 
+             object.position.y > -1 && object.position.y < 1)) {
+          console.log(`מצא אובייקט פוטנציאלי ליומן: "${object.name}", position:`, object.position, "parent:", object.parent?.name, "userData:", object.userData);
+        }
       }
     });
-    console.log("=== סיום חיפוש יומן ===");
+    console.log("=== סיום חיפוש יומן מורחב ===");
+    
+    // לוג נוסף - כל האובייקטים בסצנה
+    console.log("=== כל האובייקטים בסצנה ===");
+    gltfScene.traverse((object) => {
+      if (object.isMesh) {
+        console.log(`אובייקט: "${object.name}", position:`, object.position, "parent:", object.parent?.name);
+      }
+    });
+    console.log("=== סיום רשימת כל האובייקטים ===");
   }, [gltfScene]);
   
   // Effect to optimize objects and identify interactive ones
@@ -948,7 +974,26 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     e.stopPropagation();
     const obj = e.object;
     
+    console.log(`=== HOVER DEBUG ===`);
     console.log(`עכבר על אובייקט: ${obj.name}, userData:`, obj.userData);
+    console.log(`בדיקת שם האובייקט הישיר: "${obj.name}"`);
+    if (obj.parent) {
+      console.log(`בדיקת שם האובייקט האב: "${obj.parent.name}"`);
+      if (obj.parent.parent) {
+        console.log(`בדיקת שם סב אבא: "${obj.parent.parent.name}"`);
+      }
+    }
+    console.log(`האם כולל 300? ${obj.name.includes("300")}`);
+    console.log(`האם כולל Cube? ${obj.name.includes("Cube")}`);
+    console.log(`האם כולל book? ${obj.name.toLowerCase().includes("book")}`);
+    console.log(`position:`, obj.position);
+    console.log(`=== END DEBUG ===`);
+    
+    // לוג מיוחד לכל האובייקטים באזור השולחן
+    if (obj.position && obj.position.x > -2 && obj.position.x < 3 && 
+        obj.position.z > -2 && obj.position.z < 2) {
+      console.log(`🔍 אובייקט באזור השולחן: "${obj.name}", position:`, obj.position);
+    }
     
     // בדיקה מיוחדת לחטיף - עדיפות מקסימלית
     if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
@@ -956,22 +1001,31 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         (obj.name.toLowerCase().includes("tostitos"))) {
       console.log("זיהוי חטיף ישיר:", obj.name);
       setHovered("Cube008");
-      setMousePosition({ 
-        x: e.nativeEvent.clientX, 
-        y: e.nativeEvent.clientY 
-      });
       document.body.style.cursor = 'pointer';
       return;
     }
     
-    // בדיקה מיוחדת לפוסטר Plane014 - עדיפות גבוהה
-    if (obj.name === "Plane014") {
+    // בדיקה מיוחדת ליומן - עדיפות מקסימלית מאוד (לפני הפוסטר)
+    if (obj.name === "Cube300_1" || obj.name.includes("Cube300") ||
+        obj.name === "Cube.300" || obj.name.includes("300") ||
+        obj.name.toLowerCase().includes("notebook") || obj.name.toLowerCase().includes("book") ||
+        obj.name.toLowerCase().includes("diary") || obj.name.toLowerCase().includes("journal") ||
+        (obj.parent && (obj.parent.name.includes("300") || obj.parent.name.toLowerCase().includes("book"))) ||
+        // זיהוי לפי מיקום - אובייקטים קטנים באזור השולחן הימני
+        (obj.position && obj.position.x > 1 && obj.position.x < 2.5 && 
+         obj.position.z > -1 && obj.position.z < 0.5 && 
+         obj.position.y > -0.5 && obj.position.y < 0.5)) {
+      console.log("זיהוי יומן ישיר מעודכן עם עדיפות מקסימלית:", obj.name, "position:", obj.position);
+      setHovered("Cube300_1");
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+    
+    // בדיקה מיוחדת לפוסטר Plane014 - עדיפות נמוכה יותר
+    if (obj.name === "Plane014" && 
+        obj.position && obj.position.x < 0.5) { // רק אם הפוסטר נמצא משמאל לשולחן
       console.log("זיהוי פוסטר ישיר:", obj.name);
       setHovered("Poster");
-      setMousePosition({ 
-        x: e.nativeEvent.clientX, 
-        y: e.nativeEvent.clientY 
-      });
       document.body.style.cursor = 'pointer';
       return;
     }
@@ -985,10 +1039,6 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           interactiveObj.name.includes("Cube008")) {
         console.log("זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
         setHovered("Cube008");
-        setMousePosition({ 
-          x: e.nativeEvent.clientX, 
-          y: e.nativeEvent.clientY 
-        });
         document.body.style.cursor = 'pointer';
         return;
       }
@@ -998,10 +1048,26 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           interactiveObj.name === "Plane014") {
         console.log("זיהוי פוסטר באובייקט אינטראקטיבי:", interactiveObj.name);
         setHovered("Poster");
-        setMousePosition({ 
-          x: e.nativeEvent.clientX, 
-          y: e.nativeEvent.clientY 
-        });
+        document.body.style.cursor = 'pointer';
+        return;
+      }
+      
+      // בדיקה נוספת ליומן ברמת האובייקט האינטראקטיבי
+      if (interactiveObj.userData.name === "Cube300_1" || 
+          interactiveObj.name === "Cube300_1" || interactiveObj.name.includes("Cube300_1") ||
+          interactiveObj.name === "Cube.300" || interactiveObj.name.includes("Cube.300") ||
+          interactiveObj.name === "Cube300" || interactiveObj.name.includes("Cube300") ||
+          interactiveObj.name.includes("Notebook") || interactiveObj.name.includes("notebook") ||
+          interactiveObj.name.includes("book") || interactiveObj.name.includes("diary") ||
+          interactiveObj.name.includes("journal") ||
+          // זיהוי לפי מיקום - כל אובייקט באזור השולחן הימני הוא יומן
+          (obj.position && obj.position.x > 1.2 && obj.position.x < 2.3 && 
+           obj.position.z > -0.8 && obj.position.z < 0.3 && 
+           obj.position.y > -0.3 && obj.position.y < 0.3) ||
+          // גם אם זה פוסטר באזור השולחן - יזוהה כיומן
+          (interactiveObj.name === "Plane014" && obj.position && obj.position.x > 1.0)) {
+        console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים:", interactiveObj.name, "position:", obj.position);
+        setHovered("Cube300_1");
         document.body.style.cursor = 'pointer';
         return;
       }
@@ -1015,12 +1081,6 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
       console.log(`מה שיוצג בטקסט: ${ELEMENTS_MAP[interactiveObj.userData.name]}`);
       
       setHovered(interactiveObj.userData.name);
-      
-      // עדכון מיקום העכבר
-      setMousePosition({ 
-        x: e.nativeEvent.clientX, 
-        y: e.nativeEvent.clientY 
-      });
       
       document.body.style.cursor = 'pointer';
     } else {
@@ -1143,36 +1203,71 @@ function LimitedControls() {
 }
 
 /**
- * Component to display information about the currently hovered object.
+ * Component to display information about the currently hovered object with fixed positions.
  * @param {Object} props - Component properties.
  * @param {string|null} props.hovered - The name of the currently hovered object.
- * @param {Object} props.mousePosition - The current mouse position.
  */
-function HoverInfo({ hovered, mousePosition }) {
+function HoverInfo({ hovered }) {
   if (!hovered) return null;
 
   const text = ELEMENTS_MAP[hovered];
   console.log(`HoverInfo: hovered="${hovered}", text="${text}"`);
   
+  // מיקומים קבועים עבור כל אלמנט בהתבסס על מיקומם בחדר
+  const getFixedPosition = (elementKey) => {
+    switch(elementKey) {
+      case "Poster": // הפוסטר
+        return { left: '22%', top: '11%' }; // למעלה משמאל
+      case "Cube008": // החטיף
+        return { left: '55%', top: '48%' }; // מעל החטיף על השולחן
+      case "Plane002_2": // המחשב
+        return { left: '42%', top: '40%' }; // מעל המחשב
+      case "Gamepad": // הג'ויסטיק
+        return { left: '55%', top: '25%' }; // מעל הג'ויסטיק
+      case "Cube300_1": // היומן
+        return { left: '35%', top: '55%' }; // מעל היומן
+      default:
+        return { left: '43%', top: '5%' }; // מיקום ברירת מחדל
+    }
+  };
+
+  const position = getFixedPosition(hovered);
+  
   return (
     <div style={{
       position: 'fixed',
-      left: `${mousePosition.x + 15}px`, // קצת ימינה מהעכבר
-      top: `${mousePosition.y - 40}px`, // קצת מעל העכבר
+      left: position.left,
+      top: position.top,
+      transform: 'translate(-50%, -100%)', // ממרכז את הטקסט ומציב אותו מעל הנקודה
       color: 'white',
       padding: '0px',
       fontFamily: 'BebasNeue-Regular, Arial, sans-serif',
-      fontSize: '16px',
+      fontSize: '18px',
       zIndex: 1000,
       direction: 'ltr',
       pointerEvents: 'none',
       whiteSpace: 'nowrap',
-      transition: 'all 0.1s ease-out',
       textTransform: 'uppercase',
       letterSpacing: '1px',
-      textShadow: '2px 2px 4px rgba(0,0,0,0.8)' // צל לטקסט כדי שיהיה קריא
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+      transition: 'all 0.3s ease-out',
+      animation: 'fadeInScale 0.3s ease-out'
     }}>
       {text || hovered}
+      
+      {/* CSS for animation */}
+      <style>{`
+        @keyframes fadeInScale {
+          0% { 
+            opacity: 0; 
+            transform: translate(-50%, -100%) scale(0.8);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translate(-50%, -100%) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1322,7 +1417,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [modelLoaded, setModelLoaded] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // הסרנו את מיקום העכבר כי עכשיו אנחנו משתמשים במיקומים קבועים
 
   // Camera initial settings
   const cameraX = 1;
@@ -1465,19 +1560,6 @@ const Model3D = () => { // Renamed from App to Model3D as requested
     }
   }, [modelLoaded]);
 
-  /**
-   * Handles pointer move event to track mouse position for hover info.
-   * @param {Object} e - The event object from react-three-fiber.
-   */
-  const handlePointerMove = (e) => {
-    if (hovered) {
-      setMousePosition({ 
-        x: e.nativeEvent.clientX, 
-        y: e.nativeEvent.clientY 
-      });
-    }
-  };
-
   return (
     <div id="model-container" style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
       {isLoading && <LoadingScreen progress={loadingProgress} />}
@@ -1492,7 +1574,6 @@ const Model3D = () => { // Renamed from App to Model3D as requested
         }}
         shadows
         dpr={[1, 2]}
-        onPointerMove={handlePointerMove}
         onCreated={({ gl }) => {
           gl.physicallyCorrectLights = true;
           gl.outputColorSpace = THREE.SRGBColorSpace;
@@ -1541,7 +1622,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
       </Canvas>
 
       {/* Hover information display */}
-      <HoverInfo hovered={hovered} mousePosition={mousePosition} />
+      <HoverInfo hovered={hovered} />
     </div>
   );
 };
