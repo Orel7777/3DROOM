@@ -1020,11 +1020,11 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         obj.name.toLowerCase().includes("notebook") || obj.name.toLowerCase().includes("book") ||
         obj.name.toLowerCase().includes("diary") || obj.name.toLowerCase().includes("journal") ||
         (obj.parent && (obj.parent.name.includes("300") || obj.parent.name.toLowerCase().includes("book"))) ||
-        // זיהוי לפי מיקום - כל האזור השמאלי והמרכזי של השולחן הוא יומן
-        (obj.position && obj.position.x > 0.3 && obj.position.x < 3.0 && 
-         obj.position.z > -1.5 && obj.position.z < 1.0 && 
-         obj.position.y > -1.0 && obj.position.y < 1.0)) {
-      console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים - כל השולחן:", obj.name, "position:", obj.position);
+        // זיהוי לפי מיקום - רק השולחן הימני (אזור מצומצם)
+        (obj.position && obj.position.x > 1.0 && obj.position.x < 2.5 && 
+         obj.position.z > -1.0 && obj.position.z < 0.5 && 
+         obj.position.y > -0.5 && obj.position.y < 0.5)) {
+      console.log("🟢 זיהוי יומן לפי מיקום מצומצם באזור השולחן:", obj.name, "position:", obj.position);
       setHovered("Cube300_1");
       document.body.style.cursor = 'pointer';
       return;
@@ -1041,11 +1041,11 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
       const interactiveObj = obj.userData.isInteractive ? obj : obj.parent;
       
-      // בדיקה מיוחדת ראשונה - כל אובייקט באזור השולחן הרחב יזוהה כיומן
-      if (obj.position && obj.position.x > 0.3 && obj.position.x < 3.0 && 
-          obj.position.z > -1.5 && obj.position.z < 1.0 && 
-          obj.position.y > -1.0 && obj.position.y < 1.0) {
-        console.log("🟢 זיהוי יומן לפי מיקום רחב באזור השולחן:", obj.name, "position:", obj.position);
+      // בדיקה מיוחדת ראשונה - רק אזור השולחן הימני ליומן (מצומצם)
+      if (obj.position && obj.position.x > 1.0 && obj.position.x < 2.5 && 
+          obj.position.z > -1.0 && obj.position.z < 0.5 && 
+          obj.position.y > -0.5 && obj.position.y < 0.5) {
+        console.log("🟢 זיהוי יומן לפי מיקום מצומצם באזור השולחן:", obj.name, "position:", obj.position);
         setHovered("Cube300_1");
         document.body.style.cursor = 'pointer';
         return;
@@ -1103,6 +1103,9 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
       document.body.style.cursor = 'pointer';
     } else {
       console.log(`אובייקט לא אינטראקטיבי: ${obj.name}`);
+      // וודא שה-cursor נקי כשעוברים על אובייקט לא אינטראקטיבי
+      setHovered(null);
+      document.body.style.cursor = 'auto';
     }
   };
 
@@ -1115,10 +1118,13 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     e.stopPropagation();
     const obj = e.object;
     
-    if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
-      setHovered(null);
-      document.body.style.cursor = 'auto';
-    }
+    console.log(`=== POINTER OUT DEBUG ===`);
+    console.log(`עוזב אובייקט: ${obj.name}`);
+    console.log(`=== END POINTER OUT DEBUG ===`);
+    
+    // תמיד נקה את המצב כשעוזבים אובייקט
+    setHovered(null);
+    document.body.style.cursor = 'auto';
   };
 
   /**
