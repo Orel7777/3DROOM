@@ -9,33 +9,30 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 // מפת שמות בעברית לאובייקטים בסצנה
 const ELEMENTS_MAP = {
-  "ComputerScreen": "מסך מחשב עם שורות קוד",
+  "ComputerScreen": "Video Games",
   "DeskLamp": "מנורת שולחן",
-  "Gamepad": "שלט / ג'ויסטיק על השולחן",
-  "Keyboard": "מקלדת",
-  "TostitosBag": "שקית חטיף טוסטיטוס",
-  "Cube008": "שקית חטיף טוסטיטוס",
-  "Cube.300": "יומן / פנקס על השולחן",
-  "Cube300_1": "יומן / פנקס על השולחן",
-  "Notebook": "יומן / פנקס על השולחן",
+  "Gamepad": "Video Games",
+  "Keyboard": "Video Games",
+  "TostitosBag": "Brand Logos",
+  "Cube008": "Brand Logos", // החטיף
+  "Cube.300": "Hidden Notes", // היומן
+  "Cube300_1": "Hidden Notes", // השם האמיתי של היומן
+  "Notebook": "Hidden Notes", // יומן
   "Desk": "שולחן",
   "Chair": "כיסא",
-  "Poster_OnceUponATime": "פוסטר שמאלי - סרט הוליוודי",
-  "Poster_ReadyPlayerOne": "פוסטר ימין - Ready Player One",
-  "Poster": "פוסטר",
-  "Plane012": "פוסטר",
-  "Plane002_1": "טלויזיה", // חלק מהטלוויזיה
-  "Plane002_2": "מסך מחשב עם שורות קוד", // המחשב
+  "Poster": "Movie Posters", // רק Plane014 ישתמש במפתח הזה
+  "Plane014": "Movie Posters", // הפוסטר - האחד שצריך להציג את זה
+  "Plane002_1": "Movie Scenes", // הטלוויזיה
+  "Plane002_2": "Video Games", // המחשב
   "Window": "חלון",
-  "Monitor": "מסך מחשב",
-  "Computer": "מחשב",
-  "Screen": "מסך מחשב",
-  "Mouse": "עכבר",
-  "TV": "טלויזיה",
-  "Poster_TV": "טלויזיה עם סרט",
-  "Screen_TV": "מסך טלויזיה",
-  "Television": "טלויזיה",
-  "Ready_poster": "פוסטר",
+  "Monitor": "Video Games",
+  "Computer": "Video Games",
+  "Screen": "Video Games", // מסך נוסף
+  "Mouse": "Video Games",
+  "TV": "Movie Scenes",
+  "Poster_TV": "Movie Scenes",
+  "Screen_TV": "Movie Scenes",
+  "Television": "Movie Scenes",
   "Frame": "מסגרת תמונה"
 };
 
@@ -429,7 +426,7 @@ function enhanceInteractionArea(object) {
   object.add(interactionHelper);
 
   // טיפול מיוחד בפוסטרים וטלוויזיה - הגדלה מינימלית
-  if (object.name === "Plane012" || object.name.includes("Poster") ||
+  if (object.name === "Plane014" || object.name.includes("Poster") ||
       object.name === "TV" || object.name.includes("TV") ||
       object.name === "Plane002_1") {
     // הגדלה של 5% בלבד לפוסטרים וטלוויזיה
@@ -442,10 +439,11 @@ function enhanceInteractionArea(object) {
     interactionHelper.scale.multiplyScalar(0.8);
   }
 
-  // טיפול מיוחד בחטיף - הקטנת אזור האינטראקציה
-  if (object.name === "Cube008" || object.name.includes("Cube008")) {
-    // הקטנה ל-90% מהגודל המקורי
-    interactionHelper.scale.multiplyScalar(0.9);
+  // טיפול מיוחד בחטיף - הקטנת אזור האינטראקציה משמעותית כדי להימנע מ-overlap עם פוסטרים
+  if (object.name === "Cube008" || object.name.includes("Cube008") || 
+      object.name.includes("Tostitos") || object.name.includes("bag")) {
+    // הקטנה ל-70% מהגודל המקורי לדיוק גבוה יותר
+    interactionHelper.scale.multiplyScalar(0.7);
   }
 }
 
@@ -505,11 +503,10 @@ function findInteractiveObject(object) {
 
 // רשימת האובייקטים שיהיו לחיצים בלבד
 const INTERACTIVE_OBJECTS = [
-  "Poster", // הפוסטר
+  "Plane014", // רק הפוסטר - זה האחד שצריך להציג "Movie Posters"
   "TV", "TV_1", "TV_2", // הטלוויזיה
   "Plane002_1", // הטלוויזיה השנייה
   "Plane002_2", // המחשב
-  "Plane012", // הפוסטר השמאלי
   "Cube008", // החטיף
   "Tostitos", "bag", // חטיף נוספים
   "base", // הג'ויסטיק
@@ -865,12 +862,14 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           let key = "";
           let description = "";
 
-          // קביעת התיאור והמפתח בהתאם לשם האובייקט - סדר עדיפות מדויק
+          // קביעת התיאור והמפתח בהתאם לשם האובייקט - סדר עדיפות מדויק עם עדיפות גבוהה לחטיף
           if (object.name === "Cube008" || object.name.includes("Cube008") || 
-              object.name.includes("Tostitos") || object.name.includes("bag")) {
-            // החטיף תמיד יזוהה ראשון
+              object.name.includes("Tostitos") || object.name.includes("bag") ||
+              (object.name.toLowerCase().includes("tostitos"))) {
+            // החטיף תמיד יזוהה ראשון עם עדיפות מקסימלית
             key = "Cube008";
             description = "שקית חטיף טוסטיטוס";
+            console.log("זיהוי חטיף מדויק:", object.name);
           } else if (object.name === "Cube300_1" || object.name.includes("Cube300_1") ||
                      object.name === "Cube.300" || object.name.includes("Cube.300") ||
                      object.name === "Cube300" || object.name.includes("Cube300") ||
@@ -885,10 +884,6 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
             // הג'ויסטיק
             key = "Gamepad";
             description = "שלט / ג'ויסטיק על השולחן";
-          } else if (object.name === "Poster" || object.name.includes("Poster") || object.name === "Plane012") {
-            // הפוסטר
-            key = "Poster";
-            description = "פוסטר";
           } else if (object.name === "Plane002_2") {
             // המחשב - זיהוי מדויק
             key = "Plane002_2";
@@ -897,6 +892,11 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
             // הטלוויזיה - זיהוי מדויק
             key = "Plane002_1";
             description = "טלויזיה";
+          } else if (object.name === "Plane014") {
+            // רק הפוסטר - זיהוי מדויק ביותר
+            key = "Poster";
+            description = "Movie Posters";
+            console.log("זיהוי פוסטר מדויק - רק Plane014:", object.name);
           } else if (object.name === "TV" || object.name === "TV_1" || object.name === "TV_2" || 
                      object.name.includes("TV")) {
             // הטלוויזיה - רק אם זה לא אחד מהאובייקטים האחרים
@@ -950,8 +950,61 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     
     console.log(`עכבר על אובייקט: ${obj.name}, userData:`, obj.userData);
     
+    // בדיקה מיוחדת לחטיף - עדיפות מקסימלית
+    if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
+        obj.name.includes("Tostitos") || obj.name.includes("bag") ||
+        (obj.name.toLowerCase().includes("tostitos"))) {
+      console.log("זיהוי חטיף ישיר:", obj.name);
+      setHovered("Cube008");
+      setMousePosition({ 
+        x: e.nativeEvent.clientX, 
+        y: e.nativeEvent.clientY 
+      });
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+    
+    // בדיקה מיוחדת לפוסטר Plane014 - עדיפות גבוהה
+    if (obj.name === "Plane014") {
+      console.log("זיהוי פוסטר ישיר:", obj.name);
+      setHovered("Poster");
+      setMousePosition({ 
+        x: e.nativeEvent.clientX, 
+        y: e.nativeEvent.clientY 
+      });
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+    
     if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
       const interactiveObj = obj.userData.isInteractive ? obj : obj.parent;
+      
+      // בדיקה נוספת לחטיף ברמת האובייקט האינטראקטיבי
+      if (interactiveObj.userData.name === "Cube008" || 
+          interactiveObj.name === "Cube008" || 
+          interactiveObj.name.includes("Cube008")) {
+        console.log("זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
+        setHovered("Cube008");
+        setMousePosition({ 
+          x: e.nativeEvent.clientX, 
+          y: e.nativeEvent.clientY 
+        });
+        document.body.style.cursor = 'pointer';
+        return;
+      }
+      
+      // בדיקה נוספת לפוסטר ברמת האובייקט האינטראקטיבי
+      if (interactiveObj.userData.name === "Poster" || 
+          interactiveObj.name === "Plane014") {
+        console.log("זיהוי פוסטר באובייקט אינטראקטיבי:", interactiveObj.name);
+        setHovered("Poster");
+        setMousePosition({ 
+          x: e.nativeEvent.clientX, 
+          y: e.nativeEvent.clientY 
+        });
+        document.body.style.cursor = 'pointer';
+        return;
+      }
       
       // בדיקה שאנחנו לא כבר מציגים את אותו אובייקט
       if (hovered === interactiveObj.userData.name) {
@@ -1004,7 +1057,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
       const description = targetObj.userData.description || name;
 
       // מעבר לעמוד הפוסטרים כשלוחצים על פוסטר
-      if (name === "Poster" || targetObj.name === "Plane012") {
+      if (name === "Poster" || targetObj.name === "Plane014") {
         // משתמשים ב-window.location כי אנחנו מחוץ למרחב של React Router
         window.location.href = '/poster';
         return;
@@ -1106,20 +1159,20 @@ function HoverInfo({ hovered, mousePosition }) {
       position: 'fixed',
       left: `${mousePosition.x + 15}px`, // קצת ימינה מהעכבר
       top: `${mousePosition.y - 40}px`, // קצת מעל העכבר
-      background: 'rgba(0,0,0,0.8)',
       color: 'white',
-      padding: '8px 12px',
-      borderRadius: '6px',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '14px',
+      padding: '0px',
+      fontFamily: 'BebasNeue-Regular, Arial, sans-serif',
+      fontSize: '16px',
       zIndex: 1000,
-      direction: 'rtl', // Right-to-left for Hebrew text
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      pointerEvents: 'none', // לא חוסם את העכבר
-      whiteSpace: 'nowrap', // מונע שבירת שורות
-      transition: 'all 0.1s ease-out' // מעבר חלק
+      direction: 'ltr',
+      pointerEvents: 'none',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.1s ease-out',
+      textTransform: 'uppercase',
+      letterSpacing: '1px',
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)' // צל לטקסט כדי שיהיה קריא
     }}>
-      {text || hovered} {/* אם אין טקסט ב-ELEMENTS_MAP, נציג את השם המקורי */}
+      {text || hovered}
     </div>
   );
 }
@@ -1154,8 +1207,8 @@ const applyHighlightEffect = (obj) => {
       material.emissive = new THREE.Color(0xf1eded);
       material.emissiveIntensity = 1.0;
       
-      // טיפול מיוחד בפוסטר שמאלי (Plane012)
-      if (obj.name === "Plane012") {
+      // טיפול מיוחד בפוסטר שמאלי (Plane014)
+      if (obj.name === "Plane014") {
         material.emissiveIntensity = 1.5;
         material.emissive = new THREE.Color(0xf1eded);
       }
