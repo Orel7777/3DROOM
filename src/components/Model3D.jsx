@@ -12,7 +12,6 @@ const ELEMENTS_MAP = {
   "ComputerScreen": "Video Games",
   "DeskLamp": "מנורת שולחן",
   "Gamepad": "Video Games",
-  "Keyboard": "Video Games",
   "TostitosBag": "Brand Logos",
   "Cube008": "Brand Logos", // החטיף
   "Cube.300": "Hidden Notes", // היומן
@@ -429,8 +428,8 @@ function enhanceInteractionArea(object) {
   if (object.name === "Plane014" || object.name.includes("Poster") ||
       object.name === "TV" || object.name.includes("TV") ||
       object.name === "Plane002_1") {
-    // הגדלה של 2% בלבד לפוסטרים וטלוויזיה - הקטנה משמעותית מ-5%
-    interactionHelper.scale.multiplyScalar(1.02);
+    // הגדלה של 1% בלבד לפוסטרים וטלוויזיה - הקטנה מקסימלית
+    interactionHelper.scale.multiplyScalar(1.01);
   }
 
   // טיפול מיוחד בג'ויסטיק - הקטנה משמעותית של אזור האינטראקציה
@@ -512,7 +511,6 @@ const INTERACTIVE_OBJECTS = [
   "base", // הג'ויסטיק
   "gamepad", "Gamepad", // ג'ויסטיק נוספים
   "Monitor", "Screen", "Computer", // מסך ומחשב
-  "Keyboard", "keyboard", // מקלדת
   "Mouse", "mouse", // עכבר
   "Cube.300", "Cube300", "Cube300_1", "Notebook", "notebook", "book", "diary", "journal" // היומן - כולל השם האמיתי
 ];
@@ -812,21 +810,25 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         object.receiveShadow = false;
         object.frustumCulled = true;
 
-        // זיהוי חלקי המנורה והסרת האינטראקטיביות מהם
+        // זיהוי חלקי המנורה והסרת האינטראקטיביות מהם וגם מהמקלדת
         if (object.name === "Cylinder.010" || 
             object.name === "Plane014_1" || 
             object.name.includes("lamp") || 
             object.name.includes("Lamp") ||
+            object.name.includes("Keyboard") || object.name.includes("keyboard") ||
+            object.name === "Keyboard" || 
             (object.parent && (
               object.parent.name === "Cylinder.010" ||
               object.parent.name.includes("lamp") ||
-              object.parent.name.includes("Lamp")
+              object.parent.name.includes("Lamp") ||
+              object.parent.name.includes("Keyboard") ||
+              object.parent.name.includes("keyboard")
             ))) {
           object.userData.isInteractive = false;
           object.userData.interactionType = null;
           object.userData.description = null;
           object.userData.name = null;
-          console.log("Removing interactivity from lamp part:", object.name);
+          console.log("Removing interactivity from lamp/keyboard part:", object.name);
           return; // סיום הטיפול באובייקט זה
         }
 
@@ -887,6 +889,9 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           // מצאנו אובייקט שצריך להיות לחיץ
           let key = "";
           let description = "";
+          
+          // הסרנו את המגבלה על מיקום הפוסטר - כל Plane014 יהיה אינטראקטיבי
+          console.log("מעבד אובייקט אינטראקטיבי:", object.name, "position:", object.position);
 
           // קביעת התיאור והמפתח בהתאם לשם האובייקט - סדר עדיפות מדויק עם עדיפות גבוהה לחטיף
           if (object.name === "Cube008" || object.name.includes("Cube008") || 
@@ -919,10 +924,10 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
             key = "Plane002_1";
             description = "טלויזיה";
           } else if (object.name === "Plane014") {
-            // רק הפוסטר - זיהוי מדויק ביותר
+            // הפוסטר - כל Plane014 יהיה פוסטר ללא מגבלות מיקום
             key = "Poster";
             description = "Movie Posters";
-            console.log("זיהוי פוסטר מדויק - רק Plane014:", object.name);
+            console.log("🖼️ זיהוי פוסטר מדויק - Plane014:", object.name, "position:", object.position);
           } else if (object.name === "TV" || object.name === "TV_1" || object.name === "TV_2" || 
                      object.name.includes("TV")) {
             // הטלוויזיה - רק אם זה לא אחד מהאובייקטים האחרים
@@ -977,23 +982,27 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     console.log(`=== HOVER DEBUG ===`);
     console.log(`עכבר על אובייקט: ${obj.name}, userData:`, obj.userData);
     console.log(`בדיקת שם האובייקט הישיר: "${obj.name}"`);
+    console.log(`position:`, obj.position);
+    
+    // דיבוג מיוחד לפוסטר
+    if (obj.name === "Plane014" || obj.name.includes("Plane014")) {
+      console.log(`🖼️ מצא Plane014! שם: "${obj.name}", position:`, obj.position);
+      console.log(`תנאי מיקום: x < -0.5? ${obj.position?.x < -0.5}, z < -2.0? ${obj.position?.z < -2.0}`);
+      console.log(`מיקום מדויק: x=${obj.position?.x}, z=${obj.position?.z}`);
+    }
+    
+    // דיבוג כללי לכל אובייקט שעלול להיות פוסטר
+    if (obj.name.includes("Plane") || obj.name.includes("Poster")) {
+      console.log(`🔍 אובייקט שעלול להיות פוסטר: "${obj.name}", position:`, obj.position);
+    }
+    
     if (obj.parent) {
       console.log(`בדיקת שם האובייקט האב: "${obj.parent.name}"`);
       if (obj.parent.parent) {
         console.log(`בדיקת שם סב אבא: "${obj.parent.parent.name}"`);
       }
     }
-    console.log(`האם כולל 300? ${obj.name.includes("300")}`);
-    console.log(`האם כולל Cube? ${obj.name.includes("Cube")}`);
-    console.log(`האם כולל book? ${obj.name.toLowerCase().includes("book")}`);
-    console.log(`position:`, obj.position);
     console.log(`=== END DEBUG ===`);
-    
-    // לוג מיוחד לכל האובייקטים באזור השולחן
-    if (obj.position && obj.position.x > -2 && obj.position.x < 3 && 
-        obj.position.z > -2 && obj.position.z < 2) {
-      console.log(`🔍 אובייקט באזור השולחן: "${obj.name}", position:`, obj.position);
-    }
     
     // בדיקה מיוחדת לחטיף - עדיפות מקסימלית
     if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
@@ -1011,20 +1020,19 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         obj.name.toLowerCase().includes("notebook") || obj.name.toLowerCase().includes("book") ||
         obj.name.toLowerCase().includes("diary") || obj.name.toLowerCase().includes("journal") ||
         (obj.parent && (obj.parent.name.includes("300") || obj.parent.name.toLowerCase().includes("book"))) ||
-        // זיהוי לפי מיקום - אובייקטים קטנים באזור השולחן הימני
-        (obj.position && obj.position.x > 1 && obj.position.x < 2.5 && 
-         obj.position.z > -1 && obj.position.z < 0.5 && 
-         obj.position.y > -0.5 && obj.position.y < 0.5)) {
-      console.log("זיהוי יומן ישיר מעודכן עם עדיפות מקסימלית:", obj.name, "position:", obj.position);
+        // זיהוי לפי מיקום - כל האזור השמאלי והמרכזי של השולחן הוא יומן
+        (obj.position && obj.position.x > 0.3 && obj.position.x < 3.0 && 
+         obj.position.z > -1.5 && obj.position.z < 1.0 && 
+         obj.position.y > -1.0 && obj.position.y < 1.0)) {
+      console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים - כל השולחן:", obj.name, "position:", obj.position);
       setHovered("Cube300_1");
       document.body.style.cursor = 'pointer';
       return;
     }
     
-    // בדיקה מיוחדת לפוסטר Plane014 - עדיפות נמוכה יותר
-    if (obj.name === "Plane014" && 
-        obj.position && obj.position.x < 0.5) { // רק אם הפוסטר נמצא משמאל לשולחן
-      console.log("זיהוי פוסטר ישיר:", obj.name);
+    // בדיקה מיוחדת לפוסטר Plane014 - ללא מגבלות מיקום
+    if (obj.name === "Plane014" || obj.name.includes("Plane014")) {
+      console.log("🖼️ זיהוי פוסטר ישיר - Plane014:", obj.name, "position:", obj.position);
       setHovered("Poster");
       document.body.style.cursor = 'pointer';
       return;
@@ -1033,21 +1041,22 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
       const interactiveObj = obj.userData.isInteractive ? obj : obj.parent;
       
+      // בדיקה מיוחדת ראשונה - כל אובייקט באזור השולחן הרחב יזוהה כיומן
+      if (obj.position && obj.position.x > 0.3 && obj.position.x < 3.0 && 
+          obj.position.z > -1.5 && obj.position.z < 1.0 && 
+          obj.position.y > -1.0 && obj.position.y < 1.0) {
+        console.log("🟢 זיהוי יומן לפי מיקום רחב באזור השולחן:", obj.name, "position:", obj.position);
+        setHovered("Cube300_1");
+        document.body.style.cursor = 'pointer';
+        return;
+      }
+      
       // בדיקה נוספת לחטיף ברמת האובייקט האינטראקטיבי
       if (interactiveObj.userData.name === "Cube008" || 
           interactiveObj.name === "Cube008" || 
           interactiveObj.name.includes("Cube008")) {
         console.log("זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
         setHovered("Cube008");
-        document.body.style.cursor = 'pointer';
-        return;
-      }
-      
-      // בדיקה נוספת לפוסטר ברמת האובייקט האינטראקטיבי
-      if (interactiveObj.userData.name === "Poster" || 
-          interactiveObj.name === "Plane014") {
-        console.log("זיהוי פוסטר באובייקט אינטראקטיבי:", interactiveObj.name);
-        setHovered("Poster");
         document.body.style.cursor = 'pointer';
         return;
       }
@@ -1063,11 +1072,20 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           // זיהוי לפי מיקום - כל אובייקט באזור השולחן הימני הוא יומן
           (obj.position && obj.position.x > 1.2 && obj.position.x < 2.3 && 
            obj.position.z > -0.8 && obj.position.z < 0.3 && 
-           obj.position.y > -0.3 && obj.position.y < 0.3) ||
-          // גם אם זה פוסטר באזור השולחן - יזוהה כיומן
-          (interactiveObj.name === "Plane014" && obj.position && obj.position.x > 1.0)) {
+           obj.position.y > -0.3 && obj.position.y < 0.3)) {
         console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים:", interactiveObj.name, "position:", obj.position);
         setHovered("Cube300_1");
+        document.body.style.cursor = 'pointer';
+        return;
+      }
+      
+      // בדיקה מיוחדת לפוסטר ברמת האובייקט האינטראקטיבי
+      if (interactiveObj.userData.name === "Poster" || 
+          interactiveObj.name === "Plane014" || 
+          interactiveObj.name.includes("Plane014") ||
+          interactiveObj.userData.name === "Plane014") {
+        console.log("🖼️ זיהוי פוסטר באובייקט אינטראקטיבי:", interactiveObj.name, "position:", obj.position);
+        setHovered("Poster");
         document.body.style.cursor = 'pointer';
         return;
       }
