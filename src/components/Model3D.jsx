@@ -51,7 +51,7 @@ function logSceneObjects(scene) {
 /**
  * Loading Screen Component displayed while the model is loading.
  */
-function LoadingScreen() {
+function LoadingScreen({ progress = 0 }) {
   return (
     <div style={{
       position: 'absolute',
@@ -59,18 +59,170 @@ function LoadingScreen() {
       left: 0,
       width: '100%',
       height: '100%',
-      background: '#1a1611',
+      background: 'linear-gradient(135deg, #1a1611 0%, #2c2416 50%, #1a1611 100%)',
       display: 'flex',
+      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       color: 'white',
-      fontSize: '24px',
       fontFamily: 'Arial, sans-serif',
       zIndex: 9999
     }}>
-      <div>
-        <div>Loading...</div>
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '40px'
+      }}>
+        <h2 style={{
+          fontSize: '32px',
+          fontWeight: 'bold',
+          marginBottom: '10px',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+          background: 'linear-gradient(45deg, #f7dc6f, #f39c12)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
+          Loading 3D Model...
+        </h2>
+        <p style={{
+          fontSize: '18px',
+          color: '#bbb',
+          margin: '0'
+        }}>
+          Please wait while the room loads
+        </p>
       </div>
+
+      {/* Progress Container */}
+      <div style={{
+        width: '400px',
+        maxWidth: '80vw',
+        textAlign: 'center'
+      }}>
+        {/* Progress Text */}
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          color: '#f7dc6f',
+          textShadow: '1px 1px 2px rgba(0,0,0,0.7)'
+        }}>
+          {Math.round(progress)}%
+        </div>
+
+        {/* Main Progress Bar Container */}
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          height: '20px',
+          backgroundColor: '#333',
+          borderRadius: '15px',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(255,255,255,0.1)',
+          marginBottom: '15px'
+        }}>
+          {/* Progress Fill */}
+          <div style={{
+            width: `${progress}%`,
+            height: '100%',
+            background: 'linear-gradient(90deg, #f39c12 0%, #f7dc6f 50%, #f39c12 100%)',
+            borderRadius: '15px',
+            transition: 'width 0.3s ease-out',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Animated Shine Effect */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              animation: progress > 0 ? 'shine 2s infinite' : 'none'
+            }} />
+          </div>
+          
+          {/* Progress Marker */}
+          <div style={{
+            position: 'absolute',
+            left: `${progress}%`,
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '4px',
+            height: '28px',
+            backgroundColor: '#fff',
+            borderRadius: '2px',
+            boxShadow: '0 0 6px rgba(255,255,255,0.8)',
+            transition: 'left 0.3s ease-out'
+          }} />
+        </div>
+
+        {/* Secondary Decorative Sliders */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '10px',
+          marginTop: '20px'
+        }}>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} style={{
+              flex: 1,
+              height: '8px',
+              backgroundColor: '#444',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <div style={{
+                width: `${Math.max(0, Math.min(100, (progress - i * 20)))}%`,
+                height: '100%',
+                background: `linear-gradient(90deg, #${['e74c3c', 'e67e22', 'f39c12', '27ae60', '3498db'][i]} 0%, #${['c0392b', 'd35400', 'e67e22', '229954', '2980b9'][i]} 100%)`,
+                borderRadius: '4px',
+                transition: 'width 0.3s ease-out'
+              }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Loading Animation Dots */}
+        <div style={{
+          marginTop: '30px',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: '#f7dc6f',
+              borderRadius: '50%',
+              animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`,
+              boxShadow: '0 0 10px rgba(247, 220, 111, 0.5)'
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes shine {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { 
+            transform: scale(0.8); 
+            opacity: 0.5; 
+          }
+          50% { 
+            transform: scale(1.2); 
+            opacity: 1; 
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -358,7 +510,7 @@ const INTERACTIVE_OBJECTS = [
  * @param {Function} setHovered - Callback to set the currently hovered object.
  * @param {Object} lights - Light settings object
  */
-function Model({ setHovered, lights }) {
+function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
   const [modelUrl, setModelUrl] = useState(null);
   const [gltfScene, setGltfScene] = useState(null);
   const interactiveObjects = useRef({});
@@ -369,8 +521,6 @@ function Model({ setHovered, lights }) {
     arrowUp: false,
     arrowDown: false
   });
-  const cylinderRef = useRef(null);
-  const lampRef = useRef();
 
   useEffect(() => {
     // קבלת ה-URL של הקובץ מ-Firebase Storage
@@ -392,7 +542,6 @@ function Model({ setHovered, lights }) {
     if (modelUrl) {
       try {
         console.log("התקבל URL למודל:", modelUrl);
-        //const { scene } = useGLTF(modelUrl, true);
         const loader = new GLTFLoader();
     
         console.log("מתחיל טעינת GLTF מ-URL:", modelUrl);
@@ -403,30 +552,37 @@ function Model({ setHovered, lights }) {
           (gltf) => {
             console.log("GLTF נטען בהצלחה:", gltf);
             setGltfScene(gltf.scene);
+            // עדכון הפרוגרס ל-100% כשהמודל נטען
+            setLoadingProgress(100);
+            setModelLoaded(true);
           },
           // onProgress
           (progress) => {
             if (progress.lengthComputable) {
               const percent = (progress.loaded / progress.total * 100);
               console.log(`טעינה: ${percent.toFixed(2)}%`);
+              // עדכון הפרוגרס בהתאם לטעינה האמיתית
+              setLoadingProgress(Math.min(98, percent));
+            } else {
+              // אם אין מידע על הגודל, נעדכן בצורה חלקה
+              setLoadingProgress(prev => Math.min(90, prev + 1));
             }
           },
           // onError
           (error) => {
             console.error("שגיאה בטעינת GLTF:", error);
-            setLoadingError(`שגיאה בטעינת המודל: ${error.message}`);
+            setModelLoaded(false);
           }
         );
         
-     // setGltfScene(scene);
       } catch (error) {
-      console.log(error)
+        console.log(error)
         console.error("שגיאה בטעינת המודל:", error.code, error.message);
+        setModelLoaded(false);
       }
       
     }
   }, [modelUrl]);
-
 
   // Initial rotation values for resetting the model
   const initialRotation = [
@@ -572,7 +728,6 @@ function Model({ setHovered, lights }) {
     gltfScene.traverse((object) => {
       if (object.isMesh && object.name === "Cylinder.010") {
         console.log("Found Cylinder.010 mesh:", object);
-        cylinderRef.current = object;
         
         // הסרת האינטראקטיביות מהמנורה
         object.userData.isInteractive = false;
@@ -582,25 +737,16 @@ function Model({ setHovered, lights }) {
         
         // Apply initial settings from Leva
         if (object.material) {
-          object.material.color = new THREE.Color(lights.cylinder010.color);
-          object.material.metalness = lights.cylinder010.metalness;
-          object.material.roughness = lights.cylinder010.roughness;
-          object.material.emissive = new THREE.Color(lights.cylinder010.emissive);
-          object.material.emissiveIntensity = lights.cylinder010.emissiveIntensity;
+          object.material.color = new THREE.Color("#ffffff");
+          object.material.metalness = 0.5;
+          object.material.roughness = 0.3;
+          object.material.emissive = new THREE.Color("#f7dc6f");
+          object.material.emissiveIntensity = 1.0;
         }
-        object.visible = lights.cylinder010.visible;
-        // Store original position, rotation, scale for reference
-        const newSettings = { ...lights };
-        newSettings.cylinder010 = {
-          ...newSettings.cylinder010,
-          position: [object.position.x, object.position.y, object.position.z],
-          rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
-          scale: [object.scale.x, object.scale.y, object.scale.z]
-        };
-        setLights(newSettings);
+        object.visible = true;
       }
     });
-  }, [gltfScene]); // Only depend on scene to avoid re-running unnecessarily
+  }, [gltfScene]);
   
   // Effect to optimize objects and identify interactive ones
   useEffect(() => {
@@ -725,64 +871,6 @@ function Model({ setHovered, lights }) {
     });
   }, [gltfScene, interactiveObjects]); // Removed setSelectedObject from dependencies since it's not defined
 
-  // Effect to find and setup the lamp
-  useEffect(() => {
-    if (!gltfScene) return;
-    gltfScene.traverse((object) => {
-      if (object.isMesh && object.name === "Cylinder.010") {
-        lampRef.current = object;
-        console.log("Found lamp:", object);
-        
-        // Set initial material properties
-        if (object.material) {
-          object.material.color = new THREE.Color('#ffffff');
-          object.material.metalness = 0.5;
-          object.material.roughness = 0.3;
-          object.material.emissive = new THREE.Color('#f7dc6f');
-          object.material.emissiveIntensity = 1.0;
-        }
-      }
-    });
-  }, [gltfScene]);
-
-  // Effect to update lamp properties when controls change
-  useEffect(() => {
-    if (lampRef.current && lampRef.current.material && lights && lights.cylinder010) {
-      const lamp = lampRef.current;
-      
-      try {
-        // עדכון תכונות החומר
-        lamp.material.color = new THREE.Color(lights.cylinder010.color);
-        lamp.material.metalness = lights.cylinder010.metalness;
-        lamp.material.roughness = lights.cylinder010.roughness;
-        lamp.material.emissive = new THREE.Color(lights.cylinder010.emissive);
-        lamp.material.emissiveIntensity = lights.cylinder010.emissiveIntensity;
-        
-        // עדכון מיקום וסיבוב
-        if (Array.isArray(lights.cylinder010.position)) {
-          lamp.position.set(...lights.cylinder010.position);
-        }
-        if (Array.isArray(lights.cylinder010.rotation)) {
-          lamp.rotation.set(...lights.cylinder010.rotation);
-        }
-        if (Array.isArray(lights.cylinder010.scale)) {
-          lamp.scale.set(...lights.cylinder010.scale);
-        }
-        
-        // עדכון נראות
-        lamp.visible = lights.cylinder010.visible;
-        
-        console.log('Updated lamp properties:', {
-          color: lights.cylinder010.color,
-          emissive: lights.cylinder010.emissive,
-          position: lights.cylinder010.position
-        });
-      } catch (error) {
-        console.error('Error updating lamp properties:', error);
-      }
-    }
-  }, [lights?.cylinder010]); // תלוי בשינויים בהגדרות המנורה
-
   /**
    * Handles pointer over (hover) event on interactive objects.
    * Creates a yellow outline effect and updates the hovered state.
@@ -849,7 +937,7 @@ function Model({ setHovered, lights }) {
     }
   };
 
-     // אם אין סצנה עדיין, נחזיר null
+  // אם אין סצנה עדיין, נחזיר null
   if (!gltfScene) {
     return null;
   }
@@ -1086,15 +1174,14 @@ const removeHighlightEffect = (obj) => {
 const Model3D = () => { // Renamed from App to Model3D as requested
   const [hovered, setHovered] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [modelLoaded, setModelLoaded] = useState(false);
 
   // Camera initial settings
   const cameraX = 1;
   const cameraY = 2.2;
   const cameraZ = 14;
   const cameraFov = 45;
-
-  // Reference for the Cylinder.010 mesh
-  const cylinderRef = useRef(null);
 
   // Set up basic lighting controls with useState for stability
   const [lights, setLights] = useState({
@@ -1111,7 +1198,6 @@ const Model3D = () => { // Renamed from App to Model3D as requested
       intensity: 25,
       color: '#fdf4e3'
     },
-    // 
     posterLight: {
       position: [-11.5, -5.0, 19.8],
       angle: 0.30,
@@ -1120,13 +1206,6 @@ const Model3D = () => { // Renamed from App to Model3D as requested
       decay: 0.1,
       intensity: 5,
       color: '#ffffff'
-    },
-    deskLamp: {
-      visible: true,
-      emissive: '#f7dc6f',
-      emissiveIntensity: 1.0,
-      metalness: 0.5,
-      roughness: 0.3
     }
   });
 
@@ -1228,62 +1307,20 @@ const Model3D = () => { // Renamed from App to Model3D as requested
     }
   });
 
-  useControls('Desk Lamp', {
-    visible: {
-      value: lights.deskLamp.visible,
-      onChange: (value) => setLights(prev => ({ ...prev, deskLamp: { ...prev.deskLamp, visible: value } }))
-    },
-    emissive: {
-      value: lights.deskLamp.emissive,
-      onChange: (value) => setLights(prev => ({ ...prev, deskLamp: { ...prev.deskLamp, emissive: value } }))
-    },
-    emissiveIntensity: {
-      value: lights.deskLamp.emissiveIntensity,
-      min: 0,
-      max: 3,
-      step: 0.1,
-      onChange: (value) => setLights(prev => ({ ...prev, deskLamp: { ...prev.deskLamp, emissiveIntensity: value } }))
-    },
-    metalness: {
-      value: lights.deskLamp.metalness,
-      min: 0,
-      max: 1,
-      step: 0.1,
-      onChange: (value) => setLights(prev => ({ ...prev, deskLamp: { ...prev.deskLamp, metalness: value } }))
-    },
-    roughness: {
-      value: lights.deskLamp.roughness,
-      min: 0,
-      max: 1,
-      step: 0.1,
-      onChange: (value) => setLights(prev => ({ ...prev, deskLamp: { ...prev.deskLamp, roughness: value } }))
+  // Effect to handle loading state - רק מסיים כשהמודל באמת נטען
+  useEffect(() => {
+    if (modelLoaded) {
+      // המודל נטען - מסיים את הטעינה
+      setLoadingProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
     }
-  });
-
-  // Global keyboard listener to prevent page scrolling when arrow keys are pressed
-  useEffect(() => {
-    const preventDefaultArrows = (e) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.code)) {
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener('keydown', preventDefaultArrows);
-    return () => window.removeEventListener('keydown', preventDefaultArrows);
-  }, []);
-
-  // Handle loading state with a minimum display time for the loading screen
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000); // Show loading screen for at least 2 seconds
-
-    return () => clearTimeout(timer);
-  }, []);
+  }, [modelLoaded]);
 
   return (
     <div id="model-container" style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
-      {isLoading && <LoadingScreen />}
+      {isLoading && <LoadingScreen progress={loadingProgress} />}
 
       <Canvas
         style={{ background: '#1a1611' }}
@@ -1328,7 +1365,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
 
         {/* Suspense for loading the GLTF model */}
         <Suspense fallback={null}>
-          <Model setHovered={setHovered} lights={lights} />
+          <Model setHovered={setHovered} lights={lights} setModelLoaded={setModelLoaded} setLoadingProgress={setLoadingProgress} />
         </Suspense>
 
         {/* Camera controls */}
