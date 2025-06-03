@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "buildCommand": "git lfs pull && npm run build",
+  "installCommand": "npm install",
+  "framework": "vite"
+} 
