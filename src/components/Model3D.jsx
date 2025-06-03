@@ -14,20 +14,28 @@ const ELEMENTS_MAP = {
   "Gamepad": "שלט / ג'ויסטיק על השולחן",
   "Keyboard": "מקלדת",
   "TostitosBag": "שקית חטיף טוסטיטוס",
+  "Cube008": "שקית חטיף טוסטיטוס",
+  "Cube.300": "יומן / פנקס על השולחן",
+  "Cube300_1": "יומן / פנקס על השולחן",
+  "Notebook": "יומן / פנקס על השולחן",
   "Desk": "שולחן",
   "Chair": "כיסא",
   "Poster_OnceUponATime": "פוסטר שמאלי - סרט הוליוודי",
   "Poster_ReadyPlayerOne": "פוסטר ימין - Ready Player One",
+  "Poster": "פוסטר",
+  "Plane012": "פוסטר",
+  "Plane002_1": "טלויזיה", // חלק מהטלוויזיה
+  "Plane002_2": "מסך מחשב עם שורות קוד", // המחשב
   "Window": "חלון",
   "Monitor": "מסך מחשב",
   "Computer": "מחשב",
+  "Screen": "מסך מחשב",
   "Mouse": "עכבר",
   "TV": "טלויזיה",
   "Poster_TV": "טלויזיה עם סרט",
   "Screen_TV": "מסך טלויזיה",
   "Television": "טלויזיה",
   "Ready_poster": "פוסטר",
-  "Poster": "פוסטר",
   "Frame": "מסגרת תמונה"
 };
 
@@ -500,9 +508,16 @@ const INTERACTIVE_OBJECTS = [
   "Poster", // הפוסטר
   "TV", "TV_1", "TV_2", // הטלוויזיה
   "Plane002_1", // הטלוויזיה השנייה
+  "Plane002_2", // המחשב
   "Plane012", // הפוסטר השמאלי
   "Cube008", // החטיף
-  "base" // הג'ויסטיק
+  "Tostitos", "bag", // חטיף נוספים
+  "base", // הג'ויסטיק
+  "gamepad", "Gamepad", // ג'ויסטיק נוספים
+  "Monitor", "Screen", "Computer", // מסך ומחשב
+  "Keyboard", "keyboard", // מקלדת
+  "Mouse", "mouse", // עכבר
+  "Cube.300", "Cube300", "Cube300_1", "Notebook", "notebook", "book", "diary", "journal" // היומן - כולל השם האמיתי
 ];
 
 /**
@@ -510,7 +525,7 @@ const INTERACTIVE_OBJECTS = [
  * @param {Function} setHovered - Callback to set the currently hovered object.
  * @param {Object} lights - Light settings object
  */
-function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
+function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress }) {
   const [modelUrl, setModelUrl] = useState(null);
   const [gltfScene, setGltfScene] = useState(null);
   const interactiveObjects = useRef({});
@@ -521,6 +536,7 @@ function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
     arrowUp: false,
     arrowDown: false
   });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     // קבלת ה-URL של הקובץ מ-Firebase Storage
@@ -746,6 +762,20 @@ function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
         object.visible = true;
       }
     });
+    
+    // לוג מיוחד לבדוק את שמות כל האובייקטים שיכולים להיות יומן
+    console.log("=== מחפש אובייקטים שיכולים להיות יומן ===");
+    gltfScene.traverse((object) => {
+      if (object.isMesh && (
+        object.name.includes("Cube") || 
+        object.name.includes("book") || 
+        object.name.includes("notebook") ||
+        object.name.includes("300")
+      )) {
+        console.log(`מצא אובייקט פוטנציאלי ליומן: ${object.name}`);
+      }
+    });
+    console.log("=== סיום חיפוש יומן ===");
   }, [gltfScene]);
   
   // Effect to optimize objects and identify interactive ones
@@ -835,20 +865,58 @@ function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
           let key = "";
           let description = "";
 
-          // קביעת התיאור והמפתח בהתאם לשם האובייקט
-          if (object.name === "Poster" || object.name.includes("Poster") || object.name === "Plane012") {
+          // קביעת התיאור והמפתח בהתאם לשם האובייקט - סדר עדיפות מדויק
+          if (object.name === "Cube008" || object.name.includes("Cube008") || 
+              object.name.includes("Tostitos") || object.name.includes("bag")) {
+            // החטיף תמיד יזוהה ראשון
+            key = "Cube008";
+            description = "שקית חטיף טוסטיטוס";
+          } else if (object.name === "Cube300_1" || object.name.includes("Cube300_1") ||
+                     object.name === "Cube.300" || object.name.includes("Cube.300") ||
+                     object.name === "Cube300" || object.name.includes("Cube300") ||
+                     object.name.includes("Notebook") || object.name.includes("notebook") ||
+                     object.name.includes("book") || object.name.includes("diary") ||
+                     object.name.includes("journal")) {
+            // היומן
+            key = "Cube300_1";
+            description = "יומן / פנקס על השולחן";
+          } else if (object.name === "base" || object.name.includes("base") ||
+                     object.name.includes("gamepad") || object.name.includes("Gamepad")) {
+            // הג'ויסטיק
+            key = "Gamepad";
+            description = "שלט / ג'ויסטיק על השולחן";
+          } else if (object.name === "Poster" || object.name.includes("Poster") || object.name === "Plane012") {
+            // הפוסטר
             key = "Poster";
             description = "פוסטר";
+          } else if (object.name === "Plane002_2") {
+            // המחשב - זיהוי מדויק
+            key = "Plane002_2";
+            description = "מסך מחשב עם שורות קוד";
+          } else if (object.name === "Plane002_1") {
+            // הטלוויזיה - זיהוי מדויק
+            key = "Plane002_1";
+            description = "טלויזיה";
           } else if (object.name === "TV" || object.name === "TV_1" || object.name === "TV_2" || 
-                     object.name.includes("TV") || object.name === "Plane002_1") {
+                     object.name.includes("TV")) {
+            // הטלוויזיה - רק אם זה לא אחד מהאובייקטים האחרים
             key = "TV";
             description = "טלויזיה";
-          } else if (object.name === "Cube008" || object.name.includes("Cube008")) {
-            key = "Cube008";
-            description = "חטיף";
-          } else if (object.name === "base" || object.name.includes("base")) {
-            key = "Gamepad";
-            description = "ג'ויסטיק";
+          } else if (object.name.includes("Monitor") || object.name.includes("Screen") ||
+                     object.name.includes("Computer") || object.name === "Monitor") {
+            key = "Monitor";
+            description = "מסך מחשב עם שורות קוד";
+          } else if (object.name.includes("Keyboard") || object.name.includes("keyboard") ||
+                     object.name === "Keyboard") {
+            key = "Keyboard";
+            description = "מקלדת";
+          } else if (object.name.includes("Mouse") || object.name.includes("mouse")) {
+            key = "Mouse";
+            description = "עכבר";
+          } else {
+            // מקרה ברירת מחדל - ננסה להבין לפי השם הכללי
+            key = object.name;
+            description = object.name;
           }
 
           object.userData.name = key;
@@ -862,7 +930,7 @@ function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
           // Enhance the interaction area with an invisible helper bounding box
           enhanceInteractionArea(object);
 
-          console.log(`נמצא אובייקט אינטראקטיבי: ${key} (${object.name})`);
+          console.log(`נמצא אובייקט אינטראקטיבי: ${key} (${object.name}) - תיאור: ${description}`);
         } else {
           // Non-interactive object - clear user data
           object.userData.isInteractive = false;
@@ -880,12 +948,30 @@ function Model({ setHovered, lights, setModelLoaded, setLoadingProgress }) {
     e.stopPropagation();
     const obj = e.object;
     
+    console.log(`עכבר על אובייקט: ${obj.name}, userData:`, obj.userData);
+    
     if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
       const interactiveObj = obj.userData.isInteractive ? obj : obj.parent;
-      console.log(`עומד מעל: ${interactiveObj.name}, userData.name: ${interactiveObj.userData.name}`);
+      
+      // בדיקה שאנחנו לא כבר מציגים את אותו אובייקט
+      if (hovered === interactiveObj.userData.name) {
+        return; // כבר מציגים את האובייקט הזה
+      }
+      
+      console.log(`אובייקט אינטראקטיבי נמצא: ${interactiveObj.name}, userData.name: ${interactiveObj.userData.name}`);
+      console.log(`מה שיוצג בטקסט: ${ELEMENTS_MAP[interactiveObj.userData.name]}`);
       
       setHovered(interactiveObj.userData.name);
+      
+      // עדכון מיקום העכבר
+      setMousePosition({ 
+        x: e.nativeEvent.clientX, 
+        y: e.nativeEvent.clientY 
+      });
+      
       document.body.style.cursor = 'pointer';
+    } else {
+      console.log(`אובייקט לא אינטראקטיבי: ${obj.name}`);
     }
   };
 
@@ -1007,26 +1093,33 @@ function LimitedControls() {
  * Component to display information about the currently hovered object.
  * @param {Object} props - Component properties.
  * @param {string|null} props.hovered - The name of the currently hovered object.
+ * @param {Object} props.mousePosition - The current mouse position.
  */
-function HoverInfo({ hovered }) {
+function HoverInfo({ hovered, mousePosition }) {
   if (!hovered) return null;
 
+  const text = ELEMENTS_MAP[hovered];
+  console.log(`HoverInfo: hovered="${hovered}", text="${text}"`);
+  
   return (
     <div style={{
-      position: 'absolute',
-      bottom: '20px',
-      left: '20px',
+      position: 'fixed',
+      left: `${mousePosition.x + 15}px`, // קצת ימינה מהעכבר
+      top: `${mousePosition.y - 40}px`, // קצת מעל העכבר
       background: 'rgba(0,0,0,0.8)',
       color: 'white',
-      padding: '12px',
-      borderRadius: '8px',
+      padding: '8px 12px',
+      borderRadius: '6px',
       fontFamily: 'Arial, sans-serif',
-      fontSize: '16px',
+      fontSize: '14px',
       zIndex: 1000,
       direction: 'rtl', // Right-to-left for Hebrew text
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      pointerEvents: 'none', // לא חוסם את העכבר
+      whiteSpace: 'nowrap', // מונע שבירת שורות
+      transition: 'all 0.1s ease-out' // מעבר חלק
     }}>
-      {ELEMENTS_MAP[hovered]}
+      {text || hovered} {/* אם אין טקסט ב-ELEMENTS_MAP, נציג את השם המקורי */}
     </div>
   );
 }
@@ -1176,6 +1269,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [modelLoaded, setModelLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Camera initial settings
   const cameraX = 1;
@@ -1318,13 +1412,34 @@ const Model3D = () => { // Renamed from App to Model3D as requested
     }
   }, [modelLoaded]);
 
+  /**
+   * Handles pointer move event to track mouse position for hover info.
+   * @param {Object} e - The event object from react-three-fiber.
+   */
+  const handlePointerMove = (e) => {
+    if (hovered) {
+      setMousePosition({ 
+        x: e.nativeEvent.clientX, 
+        y: e.nativeEvent.clientY 
+      });
+    }
+  };
+
   return (
     <div id="model-container" style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
       {isLoading && <LoadingScreen progress={loadingProgress} />}
 
       <Canvas
         style={{ background: '#1a1611' }}
-        camera={{ position: [cameraX, cameraY, cameraZ], fov: cameraFov }}
+        camera={{ 
+          position: [cameraX, cameraY, cameraZ], 
+          fov: cameraFov,
+          near: 0.1,
+          far: 1000
+        }}
+        shadows
+        dpr={[1, 2]}
+        onPointerMove={handlePointerMove}
         onCreated={({ gl }) => {
           gl.physicallyCorrectLights = true;
           gl.outputColorSpace = THREE.SRGBColorSpace;
@@ -1365,7 +1480,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
 
         {/* Suspense for loading the GLTF model */}
         <Suspense fallback={null}>
-          <Model setHovered={setHovered} lights={lights} setModelLoaded={setModelLoaded} setLoadingProgress={setLoadingProgress} />
+          <Model setHovered={setHovered} hovered={hovered} lights={lights} setModelLoaded={setModelLoaded} setLoadingProgress={setLoadingProgress} />
         </Suspense>
 
         {/* Camera controls */}
@@ -1373,7 +1488,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
       </Canvas>
 
       {/* Hover information display */}
-      <HoverInfo hovered={hovered} />
+      <HoverInfo hovered={hovered} mousePosition={mousePosition} />
     </div>
   );
 };
