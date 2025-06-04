@@ -587,7 +587,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         );
         
       } catch (error) {
-        console.log(error)
+      console.log(error)
         console.error("שגיאה בטעינת המודל:", error.code, error.message);
         setModelLoaded(false);
       }
@@ -668,6 +668,9 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
   // useFrame hook for continuous model rotation based on arrow key state
   useFrame(() => {
     if (!modelRef.current) return;
+    
+    // Don't rotate model if hovering over an interactive object
+    if (hovered) return;
 
     const rotationSpeed = 0.02; // Slower rotation speed
 
@@ -743,7 +746,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
       }
     });
     console.log("=== END FULL SCENE LIST ===");
-    
+
     // Find and reference Cylinder.010 for Leva controls
     gltfScene.traverse((object) => {
       if (object.isMesh && object.name === "Cylinder.010") {
@@ -889,7 +892,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           // מצאנו אובייקט שצריך להיות לחיץ
           let key = "";
           let description = "";
-          
+
           // הסרנו את המגבלה על מיקום הפוסטר - כל Plane014 יהיה אינטראקטיבי
           console.log("מעבד אובייקט אינטראקטיבי:", object.name, "position:", object.position);
 
@@ -1004,17 +1007,9 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     }
     console.log(`=== END DEBUG ===`);
     
-    // בדיקה מיוחדת לחטיף - עדיפות מקסימלית
-    if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
-        obj.name.includes("Tostitos") || obj.name.includes("bag") ||
-        (obj.name.toLowerCase().includes("tostitos"))) {
-      console.log("זיהוי חטיף ישיר:", obj.name);
-      setHovered("Cube008");
-      document.body.style.cursor = 'pointer';
-      return;
-    }
+    // סדר עדיפויות חדש: יומן קודם, אחר כך חטיף, ואז פוסטר
     
-    // בדיקה מיוחדת ליומן - עדיפות מקסימלית מאוד (לפני הפוסטר)
+    // 1. בדיקה מיוחדת ליומן - עדיפות גבוהה ביותר
     if (obj.name === "Cube300_1" || obj.name.includes("Cube300") ||
         obj.name === "Cube.300" || obj.name.includes("300") ||
         obj.name.toLowerCase().includes("notebook") || obj.name.toLowerCase().includes("book") ||
@@ -1024,13 +1019,23 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         (obj.position && obj.position.x > 1.0 && obj.position.x < 2.5 && 
          obj.position.z > -1.0 && obj.position.z < 0.5 && 
          obj.position.y > -0.5 && obj.position.y < 0.5)) {
-      console.log("🟢 זיהוי יומן לפי מיקום מצומצם באזור השולחן:", obj.name, "position:", obj.position);
+      console.log("🔴 זיהוי יומן - עדיפות גבוהה ביותר:", obj.name, "position:", obj.position);
       setHovered("Cube300_1");
       document.body.style.cursor = 'pointer';
       return;
     }
     
-    // בדיקה מיוחדת לפוסטר Plane014 - ללא מגבלות מיקום
+    // 2. בדיקה מיוחדת לחטיף - עדיפות גבוהה
+    if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
+        obj.name.includes("Tostitos") || obj.name.includes("bag") ||
+        (obj.name.toLowerCase().includes("tostitos"))) {
+      console.log("🟠 זיהוי חטיף ישיר:", obj.name);
+      setHovered("Cube008");
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+    
+    // 3. בדיקה מיוחדת לפוסטר Plane014 - עדיפות נמוכה יותר
     if (obj.name === "Plane014" || obj.name.includes("Plane014")) {
       console.log("🖼️ זיהוי פוסטר ישיר - Plane014:", obj.name, "position:", obj.position);
       setHovered("Poster");
@@ -1051,15 +1056,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
         return;
       }
       
-      // בדיקה נוספת לחטיף ברמת האובייקט האינטראקטיבי
-      if (interactiveObj.userData.name === "Cube008" || 
-          interactiveObj.name === "Cube008" || 
-          interactiveObj.name.includes("Cube008")) {
-        console.log("זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
-        setHovered("Cube008");
-        document.body.style.cursor = 'pointer';
-        return;
-      }
+      // בדיקות לפי סדר עדיפויות: יומן, חטיף, פוסטר
       
       // בדיקה נוספת ליומן ברמת האובייקט האינטראקטיבי
       if (interactiveObj.userData.name === "Cube300_1" || 
@@ -1068,13 +1065,19 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           interactiveObj.name === "Cube300" || interactiveObj.name.includes("Cube300") ||
           interactiveObj.name.includes("Notebook") || interactiveObj.name.includes("notebook") ||
           interactiveObj.name.includes("book") || interactiveObj.name.includes("diary") ||
-          interactiveObj.name.includes("journal") ||
-          // זיהוי לפי מיקום - כל אובייקט באזור השולחן הימני הוא יומן
-          (obj.position && obj.position.x > 1.2 && obj.position.x < 2.3 && 
-           obj.position.z > -0.8 && obj.position.z < 0.3 && 
-           obj.position.y > -0.3 && obj.position.y < 0.3)) {
+          interactiveObj.name.includes("journal")) {
         console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים:", interactiveObj.name, "position:", obj.position);
         setHovered("Cube300_1");
+        document.body.style.cursor = 'pointer';
+        return;
+      }
+      
+      // בדיקה נוספת לחטיף ברמת האובייקט האינטראקטיבי
+      if (interactiveObj.userData.name === "Cube008" || 
+          interactiveObj.name === "Cube008" || 
+          interactiveObj.name.includes("Cube008")) {
+        console.log("🟠 זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
+        setHovered("Cube008");
         document.body.style.cursor = 'pointer';
         return;
       }
@@ -1123,8 +1126,8 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     console.log(`=== END POINTER OUT DEBUG ===`);
     
     // תמיד נקה את המצב כשעוזבים אובייקט
-    setHovered(null);
-    document.body.style.cursor = 'auto';
+      setHovered(null);
+      document.body.style.cursor = 'auto';
   };
 
   /**
@@ -1160,7 +1163,7 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     }
   };
 
-  // אם אין סצנה עדיין, נחזיר null
+     // אם אין סצנה עדיין, נחזיר null
   if (!gltfScene) {
     return null;
   }
@@ -1190,8 +1193,9 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
 
 /**
  * Component for limited OrbitControls to restrict camera movement.
+ * @param {boolean} isHovering - Whether an object is currently being hovered
  */
-function LimitedControls() {
+function LimitedControls({ isHovering }) {
   const controlsRef = useRef();
 
   // Function to reset the camera to its initial state
@@ -1206,11 +1210,18 @@ function LimitedControls() {
     return () => window.removeEventListener('keydown', handleReset);
   }, []);
 
+  // Update controls enabled state based on hover
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.enabled = !isHovering;
+    }
+  }, [isHovering]);
+
   return (
     <OrbitControls
       ref={controlsRef}
       minDistance={8} // מרחק מינימלי מהמודל
-      maxDistance={16} // הקטנת המרחק המקסימלי מ-18 ל-16
+      maxDistance={14} // הקטנת המרחק המקסימלי מ-18 ל-16
       minPolarAngle={Math.PI / 2.5} // הגבלת סיבוב המצלמה כלפי מעלה
       maxPolarAngle={Math.PI / 2.2} // הגבלת סיבוב המצלמה כלפי מטה
       minAzimuthAngle={-Math.PI / 12} // הגבלת סיבוב שמאלה
@@ -1222,6 +1233,7 @@ function LimitedControls() {
       enableDamping // אפשר תנועה חלקה
       dampingFactor={0.07}
       zoomSpeed={0.7} // האטת מהירות הזום
+      enabled={!isHovering} // Disable controls when hovering over interactive objects
     />
   );
 }
@@ -1241,22 +1253,22 @@ function HoverInfo({ hovered }) {
   const getFixedPosition = (elementKey) => {
     switch(elementKey) {
       case "Poster": // הפוסטר
-        return { left: '22%', top: '11%' }; // למעלה משמאל
+        return { left: '20%', top: '20%' }; // למעלה משמאל
       case "Cube008": // החטיף
-        return { left: '55%', top: '48%' }; // מעל החטיף על השולחן
+        return { left: '55%', top: '55%' }; // מעל החטיף על השולחן
       case "Plane002_2": // המחשב
-        return { left: '42%', top: '40%' }; // מעל המחשב
+        return { left: '42%', top: '47%' }; // מעל המחשב
       case "Gamepad": // הג'ויסטיק
         return { left: '55%', top: '25%' }; // מעל הג'ויסטיק
       case "Cube300_1": // היומן
-        return { left: '35%', top: '55%' }; // מעל היומן
+        return { left: '34%', top: '66%' }; // מעל היומן
       default:
-        return { left: '43%', top: '5%' }; // מיקום ברירת מחדל
+        return { left: '42%', top: '10%' }; // מיקום ברירת מחדל
     }
   };
 
   const position = getFixedPosition(hovered);
-  
+
   return (
     <div style={{
       position: 'fixed',
@@ -1444,8 +1456,8 @@ const Model3D = () => { // Renamed from App to Model3D as requested
   // הסרנו את מיקום העכבר כי עכשיו אנחנו משתמשים במיקומים קבועים
 
   // Camera initial settings
-  const cameraX = 1;
-  const cameraY = 2.2;
+  const cameraX = 2.5; // הזיזו ימינה מ-1 ל-2.5
+  const cameraY = 5; // הזיזו למעלה מ-2.2 ל-3.5
   const cameraZ = 14;
   const cameraFov = 45;
 
@@ -1642,7 +1654,7 @@ const Model3D = () => { // Renamed from App to Model3D as requested
         </Suspense>
 
         {/* Camera controls */}
-        <LimitedControls />
+        <LimitedControls isHovering={hovered !== null} />
       </Canvas>
 
       {/* Hover information display */}
