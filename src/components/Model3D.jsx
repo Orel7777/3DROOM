@@ -1253,17 +1253,17 @@ function HoverInfo({ hovered }) {
   const getFixedPosition = (elementKey) => {
     switch(elementKey) {
       case "Poster": // הפוסטר
-        return { left: '20%', top: '20%' }; // למעלה משמאל
+        return { left: '20%', top: '17%' }; // למעלה משמאל
       case "Cube008": // החטיף
-        return { left: '55%', top: '55%' }; // מעל החטיף על השולחן
+        return { left: '55%', top: '54%' }; // מעל החטיף על השולחן
       case "Plane002_2": // המחשב
-        return { left: '42%', top: '47%' }; // מעל המחשב
+        return { left: '42%', top: '45%' }; // מעל המחשב
       case "Gamepad": // הג'ויסטיק
         return { left: '55%', top: '25%' }; // מעל הג'ויסטיק
       case "Cube300_1": // היומן
-        return { left: '34%', top: '66%' }; // מעל היומן
+        return { left: '34%', top: '65%' }; // מעל היומן
       default:
-        return { left: '42%', top: '10%' }; // מיקום ברירת מחדל
+        return { left: '42%', top: '8%' }; // מיקום ברירת מחדל
     }
   };
 
@@ -1456,8 +1456,8 @@ const Model3D = () => { // Renamed from App to Model3D as requested
   // הסרנו את מיקום העכבר כי עכשיו אנחנו משתמשים במיקומים קבועים
 
   // Camera initial settings
-  const cameraX = 2.5; // הזיזו ימינה מ-1 ל-2.5
-  const cameraY = 5; // הזיזו למעלה מ-2.2 ל-3.5
+  const cameraX = 3; // הזיזו ימינה מ-1 ל-2.5
+  const cameraY = 3.7; // הזיזו למעלה מ-2.2 ל-3.5
   const cameraZ = 14;
   const cameraFov = 45;
 
