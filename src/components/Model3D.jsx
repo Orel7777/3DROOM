@@ -424,12 +424,13 @@ function enhanceInteractionArea(object) {
   // הוספת העוזר כילד של האובייקט
   object.add(interactionHelper);
 
-  // טיפול מיוחד בפוסטרים וטלוויזיה - הגדלה מינימלית
+  // טיפול מיוחד בפוסטרים וטלוויזיה - הקטנה משמעותית למניעת חפיפות
   if (object.name === "Plane014" || object.name.includes("Poster") ||
       object.name === "TV" || object.name.includes("TV") ||
-      object.name === "Plane002_1") {
-    // הגדלה של 1% בלבד לפוסטרים וטלוויזיה - הקטנה מקסימלית
-    interactionHelper.scale.multiplyScalar(1.01);
+      object.name === "Plane002_1" || object.name === "Plane002_2") {
+    // הקטנה ל-40% לפוסטרים וטלוויזיה למניעת חפיפות עם החטיף
+    interactionHelper.scale.multiplyScalar(0.4);
+    console.log("🖼️ הקטנת אזור פוסטר/טלוויזיה/מחשב ל-40%:", object.name);
   }
 
   // טיפול מיוחד בג'ויסטיק - הקטנה משמעותית של אזור האינטראקציה
@@ -888,7 +889,10 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
           (object.parent && object.parent.name.includes(name))
         );
 
-        if (isInteractive) {
+        // סינון מיוחד: מסנן את PLANE002 הרגיל (ללא סיומת)
+        const isExcluded = object.name === "PLANE002" || object.name === "Plane002";
+
+        if (isInteractive && !isExcluded) {
           // מצאנו אובייקט שצריך להיות לחיץ
           let key = "";
           let description = "";
@@ -984,131 +988,63 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
     
     console.log(`=== HOVER DEBUG ===`);
     console.log(`עכבר על אובייקט: ${obj.name}, userData:`, obj.userData);
-    console.log(`בדיקת שם האובייקט הישיר: "${obj.name}"`);
     console.log(`position:`, obj.position);
-    
-    // דיבוג מיוחד לפוסטר
-    if (obj.name === "Plane014" || obj.name.includes("Plane014")) {
-      console.log(`🖼️ מצא Plane014! שם: "${obj.name}", position:`, obj.position);
-      console.log(`תנאי מיקום: x < -0.5? ${obj.position?.x < -0.5}, z < -2.0? ${obj.position?.z < -2.0}`);
-      console.log(`מיקום מדויק: x=${obj.position?.x}, z=${obj.position?.z}`);
-    }
-    
-    // דיבוג כללי לכל אובייקט שעלול להיות פוסטר
-    if (obj.name.includes("Plane") || obj.name.includes("Poster")) {
-      console.log(`🔍 אובייקט שעלול להיות פוסטר: "${obj.name}", position:`, obj.position);
-    }
-    
-    if (obj.parent) {
-      console.log(`בדיקת שם האובייקט האב: "${obj.parent.name}"`);
-      if (obj.parent.parent) {
-        console.log(`בדיקת שם סב אבא: "${obj.parent.parent.name}"`);
-      }
-    }
     console.log(`=== END DEBUG ===`);
     
-    // סדר עדיפויות חדש: יומן קודם, אחר כך חטיף, ואז פוסטר
-    
-    // 1. בדיקה מיוחדת ליומן - עדיפות גבוהה ביותר
-    if (obj.name === "Cube300_1" || obj.name.includes("Cube300") ||
-        obj.name === "Cube.300" || obj.name.includes("300") ||
-        obj.name.toLowerCase().includes("notebook") || obj.name.toLowerCase().includes("book") ||
-        obj.name.toLowerCase().includes("diary") || obj.name.toLowerCase().includes("journal") ||
-        (obj.parent && (obj.parent.name.includes("300") || obj.parent.name.toLowerCase().includes("book"))) ||
-        // זיהוי לפי מיקום - רק השולחן הימני (אזור מצומצם)
-        (obj.position && obj.position.x > 1.0 && obj.position.x < 2.5 && 
-         obj.position.z > -1.0 && obj.position.z < 0.5 && 
-         obj.position.y > -0.5 && obj.position.y < 0.5)) {
-      console.log("🔴 זיהוי יומן - עדיפות גבוהה ביותר:", obj.name, "position:", obj.position);
-      setHovered("Cube300_1");
-      document.body.style.cursor = 'pointer';
-      return;
-    }
-    
-    // 2. בדיקה מיוחדת לחטיף - עדיפות גבוהה
+    // בדיקה מיוחדת לחטיף - עדיפות עליונה
     if (obj.name === "Cube008" || obj.name.includes("Cube008") || 
         obj.name.includes("Tostitos") || obj.name.includes("bag") ||
-        (obj.name.toLowerCase().includes("tostitos"))) {
-      console.log("🟠 זיהוי חטיף ישיר:", obj.name);
-      setHovered("Cube008");
-      document.body.style.cursor = 'pointer';
-      return;
-    }
-    
-    // 3. בדיקה מיוחדת לפוסטר Plane014 - עדיפות נמוכה יותר
-    if (obj.name === "Plane014" || obj.name.includes("Plane014")) {
-      console.log("🖼️ זיהוי פוסטר ישיר - Plane014:", obj.name, "position:", obj.position);
-      setHovered("Poster");
-      document.body.style.cursor = 'pointer';
-      return;
-    }
-    
-    if (obj && (obj.userData.isInteractive || (obj.parent && obj.parent.userData && obj.parent.userData.isInteractive))) {
-      const interactiveObj = obj.userData.isInteractive ? obj : obj.parent;
-      
-      // בדיקה מיוחדת ראשונה - רק אזור השולחן הימני ליומן (מצומצם)
-      if (obj.position && obj.position.x > 1.0 && obj.position.x < 2.5 && 
-          obj.position.z > -1.0 && obj.position.z < 0.5 && 
-          obj.position.y > -0.5 && obj.position.y < 0.5) {
-        console.log("🟢 זיהוי יומן לפי מיקום מצומצם באזור השולחן:", obj.name, "position:", obj.position);
-        setHovered("Cube300_1");
-        document.body.style.cursor = 'pointer';
-        return;
-      }
-      
-      // בדיקות לפי סדר עדיפויות: יומן, חטיף, פוסטר
-      
-      // בדיקה נוספת ליומן ברמת האובייקט האינטראקטיבי
-      if (interactiveObj.userData.name === "Cube300_1" || 
-          interactiveObj.name === "Cube300_1" || interactiveObj.name.includes("Cube300_1") ||
-          interactiveObj.name === "Cube.300" || interactiveObj.name.includes("Cube.300") ||
-          interactiveObj.name === "Cube300" || interactiveObj.name.includes("Cube300") ||
-          interactiveObj.name.includes("Notebook") || interactiveObj.name.includes("notebook") ||
-          interactiveObj.name.includes("book") || interactiveObj.name.includes("diary") ||
-          interactiveObj.name.includes("journal")) {
-        console.log("🔴 זיהוי יומן באובייקט אינטראקטיבי עם כל התנאים:", interactiveObj.name, "position:", obj.position);
-        setHovered("Cube300_1");
-        document.body.style.cursor = 'pointer';
-        return;
-      }
-      
-      // בדיקה נוספת לחטיף ברמת האובייקט האינטראקטיבי
-      if (interactiveObj.userData.name === "Cube008" || 
-          interactiveObj.name === "Cube008" || 
-          interactiveObj.name.includes("Cube008")) {
-        console.log("🟠 זיהוי חטיף באובייקט אינטראקטיבי:", interactiveObj.name);
+        (obj.parent && (obj.parent.name === "Cube008" || obj.parent.name.includes("Cube008")))) {
+      console.log("🟠 זיהוי חטיף ישיר - עדיפות עליונה:", obj.name);
+      if (hovered !== "Cube008") {
         setHovered("Cube008");
-        document.body.style.cursor = 'pointer';
-        return;
       }
-      
-      // בדיקה מיוחדת לפוסטר ברמת האובייקט האינטראקטיבי
-      if (interactiveObj.userData.name === "Poster" || 
-          interactiveObj.name === "Plane014" || 
-          interactiveObj.name.includes("Plane014") ||
-          interactiveObj.userData.name === "Plane014") {
-        console.log("🖼️ זיהוי פוסטר באובייקט אינטראקטיבי:", interactiveObj.name, "position:", obj.position);
-        setHovered("Poster");
-        document.body.style.cursor = 'pointer';
-        return;
-      }
+      document.body.style.cursor = 'pointer';
+      return;
+    }
+    
+    // סינון מיוחד: אל תתן לPLANE002 (ללא סיומת) להיות אינטראקטיבי
+    if (obj.name === "PLANE002" || obj.name === "Plane002") {
+      console.log("❌ מסנן PLANE002 רגיל:", obj.name);
+      setHovered(null);
+      document.body.style.cursor = 'auto';
+      return;
+    }
+    
+    // מצא את האובייקט האינטראקטיבי (עצמו או ההורה שלו)
+    const interactiveObj = findInteractiveObject(obj);
+    
+    if (interactiveObj && interactiveObj.userData.isInteractive) {
+      const objectName = interactiveObj.userData.name;
       
       // בדיקה שאנחנו לא כבר מציגים את אותו אובייקט
-      if (hovered === interactiveObj.userData.name) {
+      if (hovered === objectName) {
         return; // כבר מציגים את האובייקט הזה
       }
       
-      console.log(`אובייקט אינטראקטיבי נמצא: ${interactiveObj.name}, userData.name: ${interactiveObj.userData.name}`);
-      console.log(`מה שיוצג בטקסט: ${ELEMENTS_MAP[interactiveObj.userData.name]}`);
+      console.log(`✅ אובייקט אינטראקטיבי נמצא: ${interactiveObj.name}, userData.name: ${objectName}`);
+      console.log(`מה שיוצג בטקסט: ${ELEMENTS_MAP[objectName]}`);
       
-      setHovered(interactiveObj.userData.name);
+      // אם יש כבר טקסט מוצג, נעלם אותו קודם
+      if (hovered !== null) {
+        setHovered(null);
+        // עיכוב קטן לפני הצגת הטקסט החדש
+        setTimeout(() => {
+          setHovered(objectName);
+        }, 100);
+      } else {
+        // אם אין טקסט מוצג, נציג מיד
+        setHovered(objectName);
+      }
       
       document.body.style.cursor = 'pointer';
     } else {
-      console.log(`אובייקט לא אינטראקטיבי: ${obj.name}`);
-      // וודא שה-cursor נקי כשעוברים על אובייקט לא אינטראקטיבי
-      setHovered(null);
-      document.body.style.cursor = 'auto';
+      console.log(`❌ אובייקט לא אינטראקטיבי: ${obj.name}`);
+      // רק נקה את הסטייט אם באמת אין אובייקט אינטראקטיבי
+      if (hovered !== null) {
+        setHovered(null);
+        document.body.style.cursor = 'auto';
+      }
     }
   };
 
@@ -1244,11 +1180,25 @@ function LimitedControls({ isHovering }) {
  * @param {string|null} props.hovered - The name of the currently hovered object.
  */
 function HoverInfo({ hovered }) {
-  if (!hovered) return null;
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentText, setCurrentText] = useState('');
+  const [currentPosition, setCurrentPosition] = useState({ left: '50%', top: '50%' });
 
-  const text = ELEMENTS_MAP[hovered];
-  console.log(`HoverInfo: hovered="${hovered}", text="${text}"`);
-  
+  useEffect(() => {
+    if (hovered) {
+      // אם יש טקסט חדש, נעדכן אותו ונציג
+      const text = ELEMENTS_MAP[hovered];
+      const position = getFixedPosition(hovered);
+      
+      setCurrentText(text || hovered);
+      setCurrentPosition(position);
+      setIsVisible(true);
+    } else {
+      // אם אין טקסט, נסתיר
+      setIsVisible(false);
+    }
+  }, [hovered]);
+
   // מיקומים קבועים עבור כל אלמנט בהתבסס על מיקומם בחדר
   const getFixedPosition = (elementKey) => {
     switch(elementKey) {
@@ -1267,14 +1217,14 @@ function HoverInfo({ hovered }) {
     }
   };
 
-  const position = getFixedPosition(hovered);
+  // אם אין טקסט או לא רואים, לא נציג כלום
+  if (!currentText) return null;
 
   return (
     <div style={{
       position: 'fixed',
-      left: position.left,
-      top: position.top,
-      transform: 'translate(-50%, -100%)', // ממרכז את הטקסט ומציב אותו מעל הנקודה
+      left: currentPosition.left,
+      top: currentPosition.top,
       color: 'white',
       padding: '0px',
       fontFamily: 'BebasNeue-Regular, Arial, sans-serif',
@@ -1286,24 +1236,11 @@ function HoverInfo({ hovered }) {
       textTransform: 'uppercase',
       letterSpacing: '1px',
       textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-      transition: 'all 0.3s ease-out',
-      animation: 'fadeInScale 0.3s ease-out'
+      opacity: isVisible ? 1 : 0,
+      transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+      transform: `translate(-50%, -100%) scale(${isVisible ? 1 : 0.8})`
     }}>
-      {text || hovered}
-      
-      {/* CSS for animation */}
-      <style>{`
-        @keyframes fadeInScale {
-          0% { 
-            opacity: 0; 
-            transform: translate(-50%, -100%) scale(0.8);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translate(-50%, -100%) scale(1);
-          }
-        }
-      `}</style>
+      {currentText}
     </div>
   );
 }
