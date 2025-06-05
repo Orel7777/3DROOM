@@ -555,14 +555,42 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
       try {
         console.log("התקבל URL למודל:", modelUrl);
         const loader = new GLTFLoader();
-    
-        console.log("מתחיל טעינת GLTF מ-URL:", modelUrl);
         
         loader.load(
           modelUrl,
           // onLoad
           (gltf) => {
             console.log("GLTF נטען בהצלחה:", gltf);
+            
+            // מציאת המקלדת וצביעה בשחור
+            gltf.scene.traverse((object) => {
+              // מחפש אובייקטים בשם Cube.041 או Keyboard Genius
+              if (object.isMesh && 
+                  (object.name === "Cube.041" || 
+                  object.name === "Keyboard Genius" || 
+                  object.name.toLowerCase().includes("keyboard"))) {
+                console.log("מצאתי את המקלדת!", object.name);
+                
+                // יצירת חומר שחור חדש
+                const blackMaterial = new THREE.MeshStandardMaterial({
+                  color: 0x000000,  // שחור
+                  roughness: 0.5,
+                  metalness: 0.8
+                });
+                
+                // החלפת החומר של המקלדת לשחור
+                if (Array.isArray(object.material)) {
+                  // אם יש מספר חומרים, מחליף את כולם לשחור
+                  object.material = Array(object.material.length).fill(blackMaterial);
+                } else {
+                  // אחרת מחליף את החומר היחיד
+                  object.material = blackMaterial;
+                }
+                
+                console.log("צבעתי את המקלדת בשחור!", object.name);
+              }
+            });
+            
             setGltfScene(gltf.scene);
             // עדכון הפרוגרס ל-100% כשהמודל נטען
             setLoadingProgress(100);
@@ -741,11 +769,53 @@ function Model({ setHovered, hovered, lights, setModelLoaded, setLoadingProgress
 
     // לוג מפורט של כל האובייקטים עם מיקום
     console.log("=== FULL SCENE OBJECTS LIST ===");
+    
+    // חיפוש מקלדת וצביעתה בשחור - בשלב מוקדם עם לוג מפורט
+    console.log("🔍 מחפש מקלדת להפוך לשחור...");
     gltfScene.traverse((object) => {
       if (object.isMesh) {
+        // לוג מורחב לכל אובייקט כדי למצוא את המקלדת
         console.log(`Object: "${object.name}", type: ${object.type}, position:`, object.position, "parent:", object.parent?.name);
+        
+        // בדיקת מקלדת באופן מורחב - לפי שם חלקי או לפי אב
+        const lowerName = object.name.toLowerCase();
+        const isKeyboard = 
+          lowerName.includes("keyboard") || 
+          lowerName.includes("key") || 
+          lowerName.includes("מקלדת") || 
+          object.name === "Cube.041" ||
+          (object.parent && object.parent.name && object.parent.name.toLowerCase().includes("keyboard"));
+        
+        if (isKeyboard) {
+          console.log("🎯 מצאתי אובייקט מקלדת!", object.name);
+          console.log("מידע על החומר הנוכחי:", object.material);
+          
+          // יצירת חומר שחור חדש
+          const blackMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x000000), // שחור מוחלט
+            roughness: 0.3,
+            metalness: 0.7,
+            name: "KeyboardBlackMaterial"
+          });
+          
+          // החלפת החומר של המקלדת לשחור
+          if (Array.isArray(object.material)) {
+            console.log("מחליף מערך חומרים לשחור", object.material.length);
+            object.material = Array(object.material.length).fill(blackMaterial);
+          } else {
+            console.log("מחליף חומר בודד לשחור");
+            object.material = blackMaterial;
+          }
+          
+          // מאלץ עדכון חומרים
+          object.material.needsUpdate = true;
+          if (object.geometry) object.geometry.attributes.position.needsUpdate = true;
+          
+          console.log("✅ צבעתי את המקלדת בשחור!", object.name);
+        }
       }
     });
+    
     console.log("=== END FULL SCENE LIST ===");
 
     // Find and reference Cylinder.010 for Leva controls
